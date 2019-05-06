@@ -66,37 +66,37 @@ class TestStatefulState extends State<TestStatefulPage> {
 	
 	
 	Widget _buildSuggestions() {
-		return RefreshIndicator(
-			onRefresh: () => Future.delayed(Duration(seconds: 200)),
-			child: GridView.builder(
-				gridDelegate: Delegate(),
-				padding: EdgeInsets.all(20.0),
-				itemBuilder: (BuildContext context, int index) {
-					
-					return Text('entry $index');
-				},
-			),
-		);
-		
-//		return new ListView.builder(
-//			itemCount: 40,
-//			itemBuilder: (context, i) {
-//				if(i.isOdd)
-//					return Divider(
-//						color: Colors.green,
-//					);
+//		return RefreshIndicator(
+//			onRefresh: () => Future.delayed(Duration(seconds: 200)),
+//			child: GridView.builder(
+//				gridDelegate: Delegate(),
+//				padding: EdgeInsets.all(20.0),
+//				itemBuilder: (BuildContext context, int index) {
 //
-//				final idx = i ~/ 2;
-//
-//				if(idx >= _suggestions.length) {
-//					_suggestions.addAll(generateWordPairs().take(10));
-//				}
-//
-//				print("build idx:$idx, ${_suggestions[idx].asPascalCase}");
-//
-//				return _buildRow(idx, _suggestions[idx]);
-//			},
+//					return Text('entry $index');
+//				},
+//			),
 //		);
+		
+		return new ListView.builder(
+			itemCount: 40,
+			itemBuilder: (context, i) {
+				if(i.isOdd)
+					return Divider(
+						color: Colors.green,
+					);
+
+				final idx = i ~/ 2;
+
+				if(idx >= _suggestions.length) {
+					_suggestions.addAll(generateWordPairs().take(10));
+				}
+
+				print("build idx:$idx, ${_suggestions[idx].asPascalCase}");
+
+				return _buildRow(idx, _suggestions[idx]);
+			},
+		);
 	}
 	
 	

@@ -1,7 +1,7 @@
 
 class BaseData {
 	int bundleIdx = 0;
-	int get useSpanCount => 1;
+	int get useSpaceCount => 100;
 }
 
 
@@ -12,7 +12,7 @@ class SubData extends BaseData {
 	
 	@override
 	// TODO: implement useSpanCount
-	int get useSpanCount => 2;
+	int get useSpaceCount => 50;
 	
 	@override
 	String toString() {
@@ -28,7 +28,7 @@ class SubData2 extends BaseData {
 	
 	@override
 	// TODO: implement useSpanCount
-	int get useSpanCount => 4;
+	int get useSpaceCount => 25;
 	
 	@override
 	String toString() {

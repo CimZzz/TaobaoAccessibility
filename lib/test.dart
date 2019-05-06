@@ -4,8 +4,6 @@ import 'dart:convert';
 import 'dart:isolate';
 import 'dart:math';
 
-import 'package:second_app/test/databundle/BaseData.dart';
-import 'package:second_app/test/databundle/DataBundleManager.dart';
 
 
 const kk = const [1, 2, 3];
@@ -75,26 +73,92 @@ const printMethod = printHaHa;
 
 var item = 1;
 
+class CC {
+	final bool abc;
 
-void main() async {
-	final dataBundleManager = DataBundleManager();
-	
-	for(var subData in generateRandomData(20)) {
-		dataBundleManager.appendData(subData);
+  CC({this.abc = false});
+}
+
+Future exc() {
+	return Future.delayed(Duration(seconds: 1), () {
+		throw HttpException("hello world");
+	});
+}
+
+
+void asyncException() async {
+	try {
+		var result = await exc();
+	}
+	catch(e) {
+		print("e: $e");
 	}
 	
 	
-	print(dataBundleManager);
+	await Future.delayed(Duration(seconds: 2));
 	
-	print(dataBundleManager.findDataAt(12));
-	print(dataBundleManager.findDataAt(7));
 	
+	print("end");
 }
 
-Iterable<BaseData> generateRandomData(int count) {
-	var random = Random();
-	return Iterable.generate(count, (idx) => random.nextBool() ? SubData("$idx") : SubData2("$idx"));
+
+
+void main() async {
+	
+	asyncException();
+//
+//	var future =
+//
+//	future.catchError((e) {
+//		print(e);
+//		return false;
+//	});
+//
+//
+//
+//	await Future.delayed(Duration(seconds: 2));
+//
+//	future.then((number) {
+//		print(number);
+//	})
+//		..catchError((e) {
+//			print(e);
+//			return false;
+//		});
+//
+//
+//	future.then((number) {
+//		print(number);
+//	})
+//		..catchError((e) {
+//			print(e);
+//			return false;
+//		});
+	
+//	var number = await future;
+
+//	var c = CC();
+//
+//	print(c.abc);
+
+//	final dataBundleManager = DataBundleManager();
+//
+//	for(var subData in generateRandomData(20)) {
+//		dataBundleManager.appendData(subData);
+//	}
+//
+//
+//	print(dataBundleManager);
+//
+//	print(dataBundleManager.findDataAt(12));
+//	print(dataBundleManager.findDataAt(7));
+//
 }
+//
+//Iterable<BaseData> generateRandomData(int count) {
+//	var random = Random();
+//	return Iterable.generate(count, (idx) => random.nextBool() ? SubData("$idx") : SubData2("$idx"));
+//}
 
 
 //void main() async {

@@ -1,4 +1,6 @@
 
+import '../list/widget/GridListWidget.dart';
+
 enum Compare {
 	EQUAL,
 	OVER,

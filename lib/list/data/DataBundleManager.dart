@@ -1,7 +1,6 @@
 
 import 'BaseData.dart';
 import 'DataBundle.dart';
-import 'HalfSearch.dart';
 
 class DataBundleManager {
 	var _dataBundleList = List<DataBundle>();

@@ -1,10 +1,9 @@
 
 import 'BaseData.dart';
-import 'HalfSearch.dart';
 
 class DataBundle {
 	final int beginIdx;
-	double _remainSpace = 1;
+	int _remainSpace = 100;
 	int _count = 0;
 	int _endIdx = 0;
 	
@@ -16,7 +15,7 @@ class DataBundle {
 		if(_remainSpace == 0)
 			return false;
 		
-		var useSpace = 1 / data.useSpanCount;
+		var useSpace = data.useSpaceCount;
 		if(_remainSpace - useSpace < 0) {
 			return false;
 		}
@@ -25,15 +24,6 @@ class DataBundle {
 		_count ++;
 		this._endIdx ++;
 		return true;
-	}
-	
-	
-	Compare comparePosition(int position) {
-		if(position < beginIdx)
-			return Compare.OVER;
-		else if(position > _endIdx)
-			return Compare.LESS;
-		else return Compare.EQUAL;
 	}
 	
 	int getCount() {
