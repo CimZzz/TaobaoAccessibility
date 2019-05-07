@@ -6,8 +6,140 @@ import 'dart:math';
 
 
 
+void main() async {
+//	var kk = 12;
+//	kk = null;
+//	print(kk ?? 123);
+//
+//	var future = Future.delayed(Duration(seconds: 3));
+//	future.
+
+//	var receivePort = ReceivePort();
+//	Isolate.spawn(loadSync, receivePort.sendPort);
+//	SendPort sendPort = await receivePort.first;
+//
+//	int num1 = await sendAwaitMessage(sendPort, 100);
+//	int num2 = await sendAwaitMessage(sendPort, 200);
+//	int num3 = await sendAwaitMessage(sendPort, 300);
+//	int num4 = await sendAwaitMessage(sendPort, 4000);
+//
+//	print("n1: $num1, n2: $num2, n3: $num3, n4: $num4");
+//	print(0xFFFFFFFFFFFFFF);
+//	print(0x10000001);
+
+//	int value = findTempValue("1213");
+//	print(value);
+//
+//try {
+//}
+//catch (e) {
+//	print("error aaaa!");
+//}
+	
+	var kl = aaa();
+	kl.catchError((_) {
+		print("error occur!");
+		return 123;
+	});
+//		..catchError((_) {
+//			print("error occur!");
+//		});
+	await Future.delayed(Duration(seconds: 5));
+	
+	print(await kl);
+	
+//	kl.catchError((_) {
+//		print("Error occur!");
+//	});
+
+//	await kl;
+	
+	
+}
+
+
+Future aaa() async {
+	return null;
+//	await Future.delayed(Duration(seconds: 2));
+	
+}
+
+
+final _tempMap = {
+	"123": 321
+};
+
+final _finalTempMap = {
+	"1213": 456
+};
+
+T findTempValue<T>(String key) {
+	dynamic value;
+	var map = _tempMap;
+	if(map != null)
+		value = map[key];
+	
+	if(value != null) {
+		if(value is T)
+			return value;
+		
+		return null;
+	}
+	
+	map = _finalTempMap;
+	if(map != null)
+		value = map[key];
+	
+	if(value != null) {
+		if(value is T)
+			return value;
+	}
+	
+	return null;
+}
+
+
+class AC {
+	doPrint() {
+		print("Ac");
+	}
+}
+
+
+abstract class BC {
+	doPrint();
+}
+
+class ZZ extends AC with BC {
+
+}
+
+
+sendAwaitMessage(SendPort sendPort, int aNum) async {
+	var port = ReceivePort();
+	sendPort.send([port.sendPort, aNum]);
+	return port.first;
+}
+
+
+loadSync(SendPort sendPort) async {
+	var receivePort = ReceivePort();
+	sendPort.send(receivePort.sendPort);
+	
+	
+	await for (var msg in receivePort) {
+		var passSendPort = msg[0] as SendPort;
+		var number = msg[1] as int;
+		
+		passSendPort.send(number + 1);
+	}
+}
+
+
 const kk = const [1, 2, 3];
 const printMethod = printHaHa;
+
+
 
 //
 //void main() async {
@@ -103,9 +235,9 @@ void asyncException() async {
 
 
 
-void main() async {
+//void main() async {
 	
-	asyncException();
+//	asyncException();
 //
 //	var future =
 //
@@ -153,7 +285,7 @@ void main() async {
 //	print(dataBundleManager.findDataAt(12));
 //	print(dataBundleManager.findDataAt(7));
 //
-}
+//}
 //
 //Iterable<BaseData> generateRandomData(int count) {
 //	var random = Random();

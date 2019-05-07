@@ -3,7 +3,14 @@
 
 enum ListStatus {
 	Loading,
+	List,
+	Empty,
+	Error
+}
+
+enum ListContentStatus {
+	Loading,
 	Over,
 	Empty,
-	Failure
+	Error
 }
