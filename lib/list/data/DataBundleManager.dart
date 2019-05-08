@@ -4,12 +4,11 @@ import 'DataBundle.dart';
 
 class DataBundleManager {
 	var _dataBundleList = List<DataBundle>();
-	var dataList = List<BaseData>();
+	var _dataList = List<BaseData>();
 	int _count = 0;
 	
 	appendData(BaseData baseData) {
 		var beginIdx = _count;
-		_count ++;
 		
 		var lastDataBundle = _dataBundleList.length == 0 ?
 			_newDataBundle(beginIdx) : _dataBundleList.last;
@@ -19,25 +18,29 @@ class DataBundleManager {
 			lastDataBundle.checkAppendData(baseData);
 		}
 		
-		baseData.bundleIdx = _count - 1;
-		dataList.add(baseData);
+		baseData.bundleIdx = _dataBundleList.length - 1;
+		_dataList.add(baseData);
+		_count ++;
 	}
 	
 	
-	appendDataList(List<BaseData> dataList) {
+	appendDataList(List<BaseData> dataList, {bool isAllowAppend(int position, BaseData data)}) {
 		var beginIdx = _count;
-		_count += dataList.length;
 		
 		var lastDataBundle = _dataBundleList.length == 0 ?
 			_newDataBundle(beginIdx) : _dataBundleList.last;
 		for(var baseData in dataList) {
+			if(isAllowAppend != null && !isAllowAppend(beginIdx, baseData))
+				continue;
+			
 			if(!lastDataBundle.checkAppendData(baseData)) {
 				lastDataBundle = _newDataBundle(beginIdx);
 				lastDataBundle.checkAppendData(baseData);
 			}
-			baseData.bundleIdx = _count - 1;
-			dataList.add(baseData);
+			baseData.bundleIdx = _dataBundleList.length - 1;
 			beginIdx ++;
+			this._dataList.add(baseData);
+			_count ++;
 		}
 	}
 	
@@ -48,15 +51,11 @@ class DataBundleManager {
 		return dataBundle;
 	}
 	
-	DataBundle dataBundle() {
-	
-	}
-	
 	BaseData findDataAt(int position) {
 		if(position >= _count)
 			return null;
 		
-		return dataList[position];
+		return _dataList[position];
 	}
 	
 	int getRowCount() {
@@ -65,6 +64,22 @@ class DataBundleManager {
 	
 	int getCount() {
 		return _count;
+	}
+	
+	void clear() {
+		_dataBundleList.clear();
+		_dataList.clear();
+		_count = 0;
+	}
+	
+	void removeFrom(int idx, {bool isAllowAppend(int position, BaseData data)}) {
+		_dataBundleList.clear();
+		if(idx < _dataList.length)
+			_dataList.removeRange(idx, _dataList.length);
+		
+		final _tempDataList = _dataList;
+		_dataList = List();
+		appendDataList(_tempDataList, isAllowAppend: isAllowAppend);
 	}
 	
 	@override

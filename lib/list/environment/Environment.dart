@@ -14,3 +14,9 @@ enum ListContentStatus {
 	Empty,
 	Error
 }
+
+enum ListDataType {
+	ONLY_HEADER,
+	ONLY_CONTENT,
+	ALL
+}

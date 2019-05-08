@@ -1,7 +1,8 @@
 
-class BaseData {
+abstract class BaseData {
 	int bundleIdx = 0;
 	int get useSpaceCount => 100;
+	dynamic get getUniqueKey => null;
 }
 
 
