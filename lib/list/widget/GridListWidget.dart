@@ -160,7 +160,6 @@ class GridListState extends State<GridListWidget> with _InnerListProcessor {
 	
 	/// 刷新全部成功 Callback
 	void onRequestAllSuccess() {
-	
 	}
 	
 	/// 刷新全部失败 Callback
@@ -232,6 +231,7 @@ class GridListState extends State<GridListWidget> with _InnerListProcessor {
 				return buildListWidget(context, _buildListView(context));
 		}
 	}
+	
 	
 	/// 构建列表项控件
 	ListView _buildListView(BuildContext context) {
