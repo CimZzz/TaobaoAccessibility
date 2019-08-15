@@ -1,4 +1,4 @@
-package com.virtuallightning.apps.accessibility.core
+package com.virtuallightning.apps.access.utils
 
 import android.util.Log
 

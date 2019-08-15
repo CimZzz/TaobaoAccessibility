@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.virtuallightning.apps.accessibility">
+    package="com.virtuallightning.apps.access">
 
     <uses-permission android:name="android.permission.BIND_ACCESSIBILITY_SERVICE"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.READ_CONTACTS"/>
     <uses-permission android:name="android.permission.WRITE_CONTACTS"/>
 
@@ -13,7 +14,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name="com.virtuallightning.apps.accessibility.MainActivity">
+        <activity android:name="com.virtuallightning.apps.access.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -22,7 +23,8 @@
         </activity>
 
 
-        <service android:name="com.virtuallightning.apps.accessibility.core.SubscribeService"
+        <service android:name="com.virtuallightning.apps.access.core.SubscribeService"
+                 android:process=":happy"
                  android:enabled="true"
                  android:exported="true"
                  android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"

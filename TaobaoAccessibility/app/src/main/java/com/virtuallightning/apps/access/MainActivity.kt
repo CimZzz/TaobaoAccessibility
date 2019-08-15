@@ -1,4 +1,4 @@
-package com.virtuallightning.apps.accessibility
+package com.virtuallightning.apps.access
 
 import android.Manifest
 import android.content.Intent
@@ -7,8 +7,11 @@ import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.Settings
 import android.view.View
-import com.virtuallightning.apps.accessibility.utils.DataUtils
-import com.virtuallightning.apps.accessibility.utils.SysUtils
+import com.virtuallightning.apps.access.bean.ContactBean
+import com.virtuallightning.apps.access.utils.DataUtils
+import com.virtuallightning.apps.access.utils.PhoneUtils
+import com.virtuallightning.apps.access.utils.SysUtils
+import com.virtuallightning.apps.access.utils.log
 import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
@@ -30,6 +33,7 @@ class MainActivity : AppCompatActivity() {
         writePermissionBtn.setOnClickListener {
             requestPermissions(arrayOf(Manifest.permission.WRITE_CONTACTS), 100)
         }
+        requestPermissions(arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), 100)
     }
 
     override fun onResume() {

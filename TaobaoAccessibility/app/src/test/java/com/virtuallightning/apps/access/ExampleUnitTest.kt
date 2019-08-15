@@ -1,4 +1,4 @@
-package com.virtuallightning.apps.accessibility
+package com.virtuallightning.apps.access
 
 import org.junit.Test
 

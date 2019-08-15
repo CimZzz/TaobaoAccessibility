@@ -1,8 +1,8 @@
-package com.virtuallightning.apps.accessibility.core
+package com.virtuallightning.apps.access.core
 
 import android.os.SystemClock
 
-class TimerBundle(val intervalTime: Long, val callback: TimerCallback) {
+class TimerBundle(val key: String, val intervalTime: Long, val goalTime: Long, val isOnce: Boolean, val callback: TimerCallback) {
     val startTime = SystemClock.elapsedRealtime()
     var lastTime: Long = startTime
     var isDestroy: Boolean = false
@@ -17,4 +17,9 @@ class TimerBundle(val intervalTime: Long, val callback: TimerCallback) {
 
         return false
     }
+
+    fun checkOver(): Boolean =
+            if(goalTime == -1L)
+                false
+            else lastTime - startTime >= goalTime
 }

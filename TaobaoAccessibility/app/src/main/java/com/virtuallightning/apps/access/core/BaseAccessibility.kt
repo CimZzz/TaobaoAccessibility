@@ -1,8 +1,9 @@
-package com.virtuallightning.apps.accessibility.core
+package com.virtuallightning.apps.access.core
 
 import android.content.Context
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import com.virtuallightning.apps.access.utils.SysUtils
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.*
@@ -22,12 +23,24 @@ abstract class BaseAccessibility(private val service: SubscribeService) {
 
     }
 
+    open fun onHidden() {
+
+    }
+
     fun getContext(): Context = service
 
     fun getRootWindow(): AccessibilityNodeInfo = service.rootInActiveWindow
 
     fun fireAccessibility(accessibility: BaseAccessibility) {
         service.fireOtherAccessibility(accessibility)
+    }
+
+    fun registerTimer(key: String, intervalTime: Long, goalTime: Long = -1L, isOnce: Boolean = false, callback: TimerCallback) {
+        SysUtils.registerTimerCallback(key, intervalTime, goalTime, isOnce, callback = callback)
+    }
+
+    fun unregisterTimer(key: String) {
+        SysUtils.unregisterTimerCallback(key)
     }
 
     fun travelSelfChild(node: AccessibilityNodeInfo = getRootWindow(), travelCallback: TravelCallback<AccessibilityNodeInfo>) {
@@ -40,11 +53,11 @@ abstract class BaseAccessibility(private val service: SubscribeService) {
             val list = LinkedList<AccessibilityNodeInfo>()
             list.addAll((0 until node.childCount).map { node.getChild(it) })
             while (list.isNotEmpty()) {
-                val childNode = list.removeFirst()
+                val childNode = list.removeFirst()?:continue
                 if(!travelCallback(childNode))
                     break
 
-                if(childNode.childCount == 0)
+                if(childNode.childCount != 0)
                     list.addAll((0 until childNode.childCount).map { childNode.getChild(it) })
             }
         }
@@ -53,8 +66,36 @@ abstract class BaseAccessibility(private val service: SubscribeService) {
     fun findViewByDescription(node: AccessibilityNodeInfo = getRootWindow(), description: String): AccessibilityNodeInfo? {
         var founded: AccessibilityNodeInfo? = null
         travelSelfChild(node) {
-            childNode ->
+                childNode ->
             if(childNode.contentDescription != null && childNode.contentDescription.startsWith(description)) {
+                founded = childNode
+                false
+            }
+            else true
+        }
+
+        return founded
+    }
+
+    fun findViewByText(node: AccessibilityNodeInfo = getRootWindow(), text: String): AccessibilityNodeInfo? {
+        var founded: AccessibilityNodeInfo? = null
+        travelSelfChild(node) {
+                childNode ->
+            if(childNode.text != null && childNode.text.startsWith(text)) {
+                founded = childNode
+                false
+            }
+            else true
+        }
+
+        return founded
+    }
+
+    fun findViewByFirstClassName(node: AccessibilityNodeInfo = getRootWindow(), clsName: String): AccessibilityNodeInfo? {
+        var founded: AccessibilityNodeInfo? = null
+        travelSelfChild(node) {
+                childNode ->
+            if(childNode.className == clsName) {
                 founded = childNode
                 false
             }
