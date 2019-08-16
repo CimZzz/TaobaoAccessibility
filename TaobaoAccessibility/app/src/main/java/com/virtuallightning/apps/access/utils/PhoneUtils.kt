@@ -10,9 +10,8 @@ import java.nio.file.Files.delete
 import android.content.OperationApplicationException
 import android.provider.ContactsContract.CommonDataKinds.Phone
 import android.content.ContentProviderOperation
-
-
-
+import com.virtuallightning.apps.access.accessibility.Constants
+import kotlin.random.Random
 
 
 /**
@@ -100,6 +99,17 @@ object PhoneUtils {
             }
             catch (e: Throwable) {
             }
+        }
+    }
+
+
+
+
+    fun randomName(): String {
+        val nameLength = Random.nextInt(2) + 2
+        return buildString {
+            for(i in 0 until nameLength)
+                append(Constants.NAME[Random.nextInt(Constants.NAME.size)])
         }
     }
 }

@@ -22,7 +22,6 @@ class EntryAccessibility(service: SubscribeService) : BaseAccessibility(service)
                 if(event.className == Constants.CNAME.WXACTIVITY) {
                     fireAccessibility(Constants.Accessibility.ACTION)
                 }
-                log("page: ${event.className}")
             }
         }
     }

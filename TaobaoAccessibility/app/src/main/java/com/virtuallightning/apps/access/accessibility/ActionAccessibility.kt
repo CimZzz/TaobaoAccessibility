@@ -29,8 +29,12 @@ class ActionAccessibility(service: SubscribeService) : BaseAccessibility(service
     private var status = STATUS_INIT
     private var collectionSet = HashSet<ContactBean>()
 
+    /*用于 debug */
     private var inputStream: BufferedReader? = null
     private var outputStream: PrintWriter? = null
+    private var isReadEnd: Boolean = false
+    private var contactBeanList: List<ContactBean>? = null
+
 
     override fun onFired() {
         super.onFired()
@@ -40,21 +44,7 @@ class ActionAccessibility(service: SubscribeService) : BaseAccessibility(service
 
     override fun onHidden() {
         super.onHidden()
-        unregisterTimer(TIME_MOCK_PREPARED)
-        try {
-            inputStream?.close()
-        }
-        catch (e: Throwable) {
-
-        }
-        inputStream = null
-        try {
-            outputStream?.close()
-        }
-        catch (e: Throwable) {
-
-        }
-        outputStream = null
+        resetDebug()
         status = STATUS_INIT
         collectionSet = HashSet()
     }
@@ -149,7 +139,21 @@ class ActionAccessibility(service: SubscribeService) : BaseAccessibility(service
      */
     private fun checkPreparing() {
 //        Constants.Client.firePreparing()
-//        debugPreparing()
+        debugPreparing()
+    }
+
+    /**
+     * 用于 debug 的准备工作
+     * 读取文件中的手机号进行匹配
+     */
+    private fun debugPreparing() {
+        if(isReadEnd) {
+            log("全部读取完成")
+            dispose()
+            return
+        }
+        log("开始执行 debug 专用准备")
+
         val curInput = inputStream?:{
             val input = getContext().resources.openRawResource(R.raw.phones)
             val reader = BufferedReader(InputStreamReader(input))
@@ -157,44 +161,71 @@ class ActionAccessibility(service: SubscribeService) : BaseAccessibility(service
             reader
         }()
 
+        log("读取文件里的手机号")
+        val debugPerLine = 500
         var idx = 0
-        var list = LinkedList<ContactBean>()
+        val list = LinkedList<ContactBean>()
         try {
             while (true) {
                 val line = curInput.readLine()
                 if (line == null) {
                     if (idx == 0) {
+                        log("")
                         dispose()
                         return
                     }
+                    break
                 }
 
-                list.add(ContactBean(idx.toString(), line))
+                list.add(ContactBean(PhoneUtils.randomName(), line))
                 idx++
 
-                if (idx >= 10)
+                if (idx >= debugPerLine)
                     break
             }
 
+            log("开始写入手机号...")
             PhoneUtils.removeContact(getContext())
             PhoneUtils.writeContact(getContext(), list)
             log("写入手机号完成")
-            readyForWorking()
+
+            isReadEnd = idx < debugPerLine
+            contactBeanList = list
+            log("完成准备等待一段时间后开始工作")
+            registerTimer(TIME_MOCK_PREPARED, 1000L, goalTime = 10000L) {
+                if(it) {
+                    log("等待时间结束")
+                    readyForWorking()
+                }
+            }
         }
         catch (e: Throwable) {
+            log("读取手机号发生异常: $e")
             dispose()
         }
     }
 
     /**
-     * 用于 debug 的准备工作
+     * 重置 debug 环境
      */
-    private fun debugPreparing() {
-        log("开始执行 debug 专用准备")
-//        registerTimer(TIME_MOCK_PREPARED, 5000L, isOnce = true) {
-//            /// 执行完成准备工作
-//            readyForWorking()
-//        }
+    private fun resetDebug() {
+        contactBeanList = null
+        isReadEnd = false
+        unregisterTimer(TIME_MOCK_PREPARED)
+        try {
+            inputStream?.close()
+        }
+        catch (e: Throwable) {
+
+        }
+        inputStream = null
+        try {
+            outputStream?.close()
+        }
+        catch (e: Throwable) {
+
+        }
+        outputStream = null
     }
 
     /**
@@ -214,6 +245,11 @@ class ActionAccessibility(service: SubscribeService) : BaseAccessibility(service
         }
     }
 
+    /**
+     * 拾取倒计时器
+     * 当等待拾取时间超过该时间是表示已经完成拾取
+     * 需要细分页面状态
+     */
     private fun pickCountdownTimer() {
         registerTimer(TIME_NUMBER_PICKER, 3000L, 0L, isOnce = true) {
             completed()
@@ -262,7 +298,7 @@ class ActionAccessibility(service: SubscribeService) : BaseAccessibility(service
      * 完成拾取工作
      */
     private fun completed() {
-        log("完成")
+        log("完成手机拾取工作")
         if(status == STATUS_CONTACT) {
             val node = findViewByDescription(description = "转到上一层级")
             if(node == null) {
@@ -284,7 +320,20 @@ class ActionAccessibility(service: SubscribeService) : BaseAccessibility(service
      * 处理拾取到的手机联系人数据，处理结束后该集合将置为 null
      */
     private fun handleData() {
-        log("有效手机号: $collectionSet")
+        debugHandleData()
+    }
+
+    /**
+     * debug 环境下的处理数据方式
+     */
+    private fun debugHandleData() {
+        val orgList = contactBeanList
+        if(orgList == null) {
+            /// 一般情况下不会出现这种情况
+            dispose()
+            return
+        }
+        log("处理有效手机号")
         val curOutput = outputStream?:{
             val stream = FileOutputStream(file)
             val writer = PrintWriter(stream)
@@ -292,9 +341,45 @@ class ActionAccessibility(service: SubscribeService) : BaseAccessibility(service
             writer
         }()
 
-        collectionSet.forEach {
-            curOutput.println(it)
+        curOutput.println("处理手机号完成。")
+        curOutput.println("原始手机号数量: ${orgList.size}, 识别出有效的手机号数量: ${collectionSet.size}")
+        curOutput.println("==============以下是原始手机号数据==================")
+        (0 until orgList.size).forEach {
+            val bean = orgList[it]
+            curOutput.println("$it. ${bean.phoneNum}")
         }
+
+        curOutput.println("=======================END=======================")
+        curOutput.println("|")
+        curOutput.println("|")
+        curOutput.println("|")
+        curOutput.println("|")
+
+        curOutput.println("==============以下是有效手机号数据==================")
+        var idx = 0
+        collectionSet.forEach {
+            curOutput.println("$idx. ${it.phoneNum}")
+            idx ++
+        }
+
+        curOutput.println("=======================END=======================")
+        curOutput.println("|")
+        curOutput.println("|")
+        curOutput.println("|")
+        curOutput.println("|")
+
+        curOutput.println("==============以下是未识别手机号数据==================")
+        idx = 0
+        orgList.forEach {
+            if(collectionSet.contains(it))
+                return@forEach
+
+            curOutput.println("$idx. ${it.phoneNum}")
+
+            idx ++
+        }
+        curOutput.println("=======================END=======================")
+
         curOutput.flush()
     }
 }

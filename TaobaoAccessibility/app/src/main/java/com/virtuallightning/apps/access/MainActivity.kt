@@ -13,6 +13,9 @@ import com.virtuallightning.apps.access.utils.PhoneUtils
 import com.virtuallightning.apps.access.utils.SysUtils
 import com.virtuallightning.apps.access.utils.log
 import kotlinx.android.synthetic.main.activity_main.*
+import java.io.BufferedReader
+import java.io.InputStreamReader
+import java.util.*
 
 class MainActivity : AppCompatActivity() {
 
@@ -24,6 +27,36 @@ class MainActivity : AppCompatActivity() {
             val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
             startActivity(intent)
+
+//            val curInput = BufferedReader(InputStreamReader(resources.openRawResource(R.raw.phones)))
+//            val debugPerLine = 500
+//            var idx = 0
+//            val list = LinkedList<ContactBean>()
+//            try {
+//                while (true) {
+//                    val line = curInput.readLine()
+//                    if (line == null) {
+//                        if (idx == 0) {
+//                            log("结束")
+//                        }
+//                        break
+//                    }
+//                    list.add(ContactBean(PhoneUtils.randomName(), line))
+//                    idx++
+//                    if (idx >= debugPerLine)
+//                        break
+//                }
+//                log("开始写入手机号...")
+//                PhoneUtils.removeContact(this@MainActivity)
+//                PhoneUtils.writeContact(this@MainActivity, list)
+//                log("写入手机号完成")
+//                if(idx < debugPerLine)
+//                    log("全部读取结束")
+//                log("完成准备等待一段时间后开始工作")
+//            }
+//            catch (e: Throwable) {
+//                log("读取手机号发生异常: $e")
+//            }
         }
 
         readPermissionBtn.setOnClickListener {
