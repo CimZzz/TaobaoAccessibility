@@ -1,6 +1,7 @@
 package com.virtuallightning.apps.access.accessibility
 
 import android.os.Environment
+import android.os.SystemClock
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import com.virtuallightning.apps.access.R
@@ -10,7 +11,9 @@ import com.virtuallightning.apps.access.core.SubscribeService
 import com.virtuallightning.apps.access.utils.PhoneUtils
 import com.virtuallightning.apps.access.utils.log
 import java.io.*
+import java.lang.Exception
 import java.util.*
+import kotlin.random.Random
 
 class ActionAccessibility(service: SubscribeService) : BaseAccessibility(service) {
     companion object {
@@ -18,12 +21,14 @@ class ActionAccessibility(service: SubscribeService) : BaseAccessibility(service
         const val STATUS_UNKNOWN = -1
         const val STATUS_PREPARING = 1
         const val STATUS_READY = 2
-        const val STATUS_CONTACT = 4
-        const val STATUS_CONTACT_COMPLETED = 5
+        const val STATUS_VALID = 3
+        const val STATUS_READY_WAIT = 4
+        const val STATUS_CONTACT = 5
+        const val STATUS_CONTACT_COMPLETED = 6
 
         const val TIME_MOCK_PREPARED = "ACTION_PREPARED"
         const val TIME_NUMBER_PICKER = "ACTION_PICKER"
-
+        const val TIME_READY_WAIT = "ACTION_READY"
     }
 
     private var status = STATUS_INIT
@@ -34,6 +39,7 @@ class ActionAccessibility(service: SubscribeService) : BaseAccessibility(service
     private var outputStream: PrintWriter? = null
     private var isReadEnd: Boolean = false
     private var contactBeanList: List<ContactBean>? = null
+    private var startTime: Long = 0
 
 
     override fun onFired() {
@@ -45,6 +51,7 @@ class ActionAccessibility(service: SubscribeService) : BaseAccessibility(service
     override fun onHidden() {
         super.onHidden()
         resetDebug()
+        unregisterTimer(TIME_READY_WAIT)
         status = STATUS_INIT
         collectionSet = HashSet()
     }
@@ -54,6 +61,14 @@ class ActionAccessibility(service: SubscribeService) : BaseAccessibility(service
             /// 页面发生变化时
             AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> {
                 when(event.className) {
+                    Constants.CNAME.WIRELESS -> {
+                        if(status == STATUS_CONTACT || status == STATUS_READY_WAIT) {
+                            stopCountdownTimer()
+                            unregisterTimer(TIME_READY_WAIT)
+                            status = STATUS_VALID
+                            return
+                        }
+                    }
                     Constants.CNAME.WXACTIVITY -> {
                         when(status) {
                             /// 从后台返回到前台，重新尝试识别页面
@@ -77,8 +92,20 @@ class ActionAccessibility(service: SubscribeService) : BaseAccessibility(service
                             /// 如果当前准备完毕，去往 "手机联系人" 进行拾取
                             STATUS_READY -> {
                                 log("开始拾取手机号")
-                                status = STATUS_CONTACT
+                                status = STATUS_READY_WAIT
+                                registerTimer(TIME_READY_WAIT, 2000L, isOnce = true) {
+                                    if(status == STATUS_READY_WAIT) {
+                                        status = STATUS_CONTACT
+                                        pickPhoneNum()
+                                    }
+                                }
+                            }
+                            ///
+                            STATUS_VALID -> {
+                                log("继续拾取手机号")
                                 pickCountdownTimer()
+                                status = STATUS_CONTACT
+                                pickPhoneNum()
                             }
                         }
                     }
@@ -125,7 +152,7 @@ class ActionAccessibility(service: SubscribeService) : BaseAccessibility(service
      */
     private fun tryRecognizePage() {
         log("正在识别")
-        if(findViewByText(text= "通讯录") != null) {
+        if(findViewByText(text= "通讯录") != null || findViewByText(text = "添加好友") != null) {
             log("已识别，当前页面为通讯录页")
             /// 存在 "通讯录" 三个字，表示当前已经到达通讯录页，切换状态为 "准备中准备下一步动作"
             status = STATUS_PREPARING
@@ -153,7 +180,7 @@ class ActionAccessibility(service: SubscribeService) : BaseAccessibility(service
             return
         }
         log("开始执行 debug 专用准备")
-
+        startTime = SystemClock.elapsedRealtime()
         val curInput = inputStream?:{
             val input = getContext().resources.openRawResource(R.raw.phones)
             val reader = BufferedReader(InputStreamReader(input))
@@ -161,15 +188,20 @@ class ActionAccessibility(service: SubscribeService) : BaseAccessibility(service
             reader
         }()
 
+        log("清空全部联系人")
+        PhoneUtils.removeContact(getContext())
         log("读取文件里的手机号")
+        var currentCount = 0
         val debugPerLine = 500
         var idx = 0
-        val list = LinkedList<ContactBean>()
+        var isNothing = true
+        val totalList = LinkedList<ContactBean>()
+        var list = LinkedList<ContactBean>()
         try {
             while (true) {
                 val line = curInput.readLine()
                 if (line == null) {
-                    if (idx == 0) {
+                    if (idx == 0 && isNothing) {
                         log("")
                         dispose()
                         return
@@ -177,20 +209,33 @@ class ActionAccessibility(service: SubscribeService) : BaseAccessibility(service
                     break
                 }
 
-                list.add(ContactBean(PhoneUtils.randomName(), line))
+                val bean = ContactBean(PhoneUtils.randomName(), line)
+                list.add(bean)
+                totalList.add(bean)
+                isNothing = false
                 idx++
 
-                if (idx >= debugPerLine)
-                    break
+                if (idx >= debugPerLine) {
+                    currentCount += idx
+                    log("开始写入手机号...")
+                    PhoneUtils.writeContact(getContext(), list)
+                    log("写入手机号完成")
+                    log("当前写入数量为: $currentCount")
+                    idx = 0
+                    list = LinkedList()
+                }
             }
 
-            log("开始写入手机号...")
-            PhoneUtils.removeContact(getContext())
-            PhoneUtils.writeContact(getContext(), list)
-            log("写入手机号完成")
+            if(idx != 0) {
+                currentCount += idx
+                log("开始写入手机号...")
+                PhoneUtils.writeContact(getContext(), list)
+                log("写入手机号完成")
+                log("当前写入数量为: $currentCount")
+            }
 
-            isReadEnd = idx < debugPerLine
-            contactBeanList = list
+            isReadEnd = true
+            contactBeanList = totalList
             log("完成准备等待一段时间后开始工作")
             registerTimer(TIME_MOCK_PREPARED, 1000L, goalTime = 10000L) {
                 if(it) {
@@ -251,46 +296,55 @@ class ActionAccessibility(service: SubscribeService) : BaseAccessibility(service
      * 需要细分页面状态
      */
     private fun pickCountdownTimer() {
-        registerTimer(TIME_NUMBER_PICKER, 3000L, 0L, isOnce = true) {
+        registerTimer(TIME_NUMBER_PICKER, 10000L, 0L, isOnce = true) {
             completed()
         }
+    }
+
+    private fun stopCountdownTimer() {
+        unregisterTimer(TIME_NUMBER_PICKER)
     }
 
     /**
      * 开始拾取手机号
      */
     private fun pickPhoneNum() {
-        if(status == STATUS_CONTACT) {
-            /// 首先找到 ListView
-            val listViewNode = findViewByFirstClassName(clsName = Constants.CNAME.LIST_VIEW)
-            if(listViewNode == null) {
-                /// 不存在列表的情况（一般不会发生，除非淘宝改版）
-                dispose()
-                return
-            }
-
-            /// 遍历列表中全部元素放入到号码集合中
-            (0 until listViewNode.childCount).forEach {
-                /// 获取列表项节点，目前版本，如果子项存在三个子节点表示正确的用户节点。
-                val itemNode = listViewNode.getChild(it)
-                if(itemNode.childCount == 3) {
-                    /// 第一个子项是用户名
-                    /// 第二个子项是手机号
-                    /// 第三个子项是按钮
-                    val nameNode = itemNode.getChild(0)
-                    val numberNode = itemNode.getChild(1)
-
-                    /// 用户名和手机号应均不为 `null`
-                    val name = nameNode.text?:return@forEach
-                    val number = numberNode.text?:return@forEach
-
-                    collectionSet.add(ContactBean(name.toString(), number.toString()))
+        try {
+            if(status == STATUS_CONTACT) {
+                /// 首先找到 ListView
+                val listViewNode = findViewByFirstClassName(clsName = Constants.CNAME.LIST_VIEW)
+                if(listViewNode == null) {
+                    /// 不存在列表的情况（一般不会发生，除非淘宝改版）
+                    dispose()
+                    return
                 }
-            }
 
-            /// 添加完执行滚动逻辑
-            listViewNode.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)
-            pickCountdownTimer()
+                /// 遍历列表中全部元素放入到号码集合中
+                (0 until listViewNode.childCount).forEach {
+                    /// 获取列表项节点，目前版本，如果子项存在三个子节点表示正确的用户节点。
+                    val itemNode = listViewNode.getChild(it)
+                    if(itemNode.childCount == 3) {
+                        /// 第一个子项是用户名
+                        /// 第二个子项是手机号
+                        /// 第三个子项是按钮
+                        val nameNode = itemNode.getChild(0)
+                        val numberNode = itemNode.getChild(1)
+
+                        /// 用户名和手机号应均不为 `null`
+                        val name = nameNode.text?:return@forEach
+                        val number = numberNode.text?:return@forEach
+
+                        collectionSet.add(ContactBean(name.toString(), number.toString()))
+                    }
+                }
+
+                /// 添加完执行滚动逻辑
+                listViewNode.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)
+                pickCountdownTimer()
+            }
+        }
+        catch (e: Exception) {
+            stopCountdownTimer()
         }
     }
 
@@ -343,7 +397,9 @@ class ActionAccessibility(service: SubscribeService) : BaseAccessibility(service
 
         curOutput.println("处理手机号完成。")
         curOutput.println("原始手机号数量: ${orgList.size}, 识别出有效的手机号数量: ${collectionSet.size}")
+        curOutput.println("总时间: ${SystemClock.elapsedRealtime() - startTime}")
         curOutput.println("==============以下是原始手机号数据==================")
+        curOutput.println("raw")
         (0 until orgList.size).forEach {
             val bean = orgList[it]
             curOutput.println("$it. ${bean.phoneNum}")
@@ -356,6 +412,7 @@ class ActionAccessibility(service: SubscribeService) : BaseAccessibility(service
         curOutput.println("|")
 
         curOutput.println("==============以下是有效手机号数据==================")
+        curOutput.println("validation")
         var idx = 0
         collectionSet.forEach {
             curOutput.println("$idx. ${it.phoneNum}")
@@ -369,6 +426,7 @@ class ActionAccessibility(service: SubscribeService) : BaseAccessibility(service
         curOutput.println("|")
 
         curOutput.println("==============以下是未识别手机号数据==================")
+        curOutput.println("unrecognized")
         idx = 0
         orgList.forEach {
             if(collectionSet.contains(it))

@@ -32,4 +32,7 @@
         <Button android:layout_width="wrap_content" android:layout_height="wrap_content"
                 android:id="@+id/writePermissionBtn" android:text="申请权限"/>
     </LinearLayout>
+
+    <Button android:id="@+id/clearBtn" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="清空联系人"/>
+
 </LinearLayout>

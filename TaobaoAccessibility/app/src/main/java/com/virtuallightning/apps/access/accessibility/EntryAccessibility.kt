@@ -22,6 +22,7 @@ class EntryAccessibility(service: SubscribeService) : BaseAccessibility(service)
                 if(event.className == Constants.CNAME.WXACTIVITY) {
                     fireAccessibility(Constants.Accessibility.ACTION)
                 }
+                else log(event.className)
             }
         }
     }

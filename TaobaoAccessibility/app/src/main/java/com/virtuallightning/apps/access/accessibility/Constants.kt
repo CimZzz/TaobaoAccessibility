@@ -9,7 +9,9 @@ object Constants {
     object CNAME {
         const val WXACTIVITY = "com.taobao.weex.WXActivity"
         const val CONTACT = "com.taobao.message.activity.IMContactsListActivity"
+        const val WIRELESS = "com.alibaba.wireless.security.open.middletier.fc.ui.ContainerActivity"
         const val LIST_VIEW = "android.widget.ListView"
+
     }
 
     object Accessibility {

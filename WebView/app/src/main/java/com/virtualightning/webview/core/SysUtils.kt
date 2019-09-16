@@ -1,12 +1,15 @@
 package com.virtualightning.webview.core
 
 import android.Manifest
+import android.app.Instrumentation
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import android.support.v4.content.ContextCompat
+import android.view.MotionEvent
+import android.view.View
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
@@ -52,6 +55,9 @@ object SysUtils {
 
     fun runOnMain(runnable: () -> Unit) {
         handler.post(runnable)
+    }
+    fun runOnMainDelay(delay: Long, runnable: () -> Unit) {
+        handler.postDelayed(runnable, delay)
     }
 
 
@@ -117,4 +123,21 @@ object SysUtils {
     private fun shutdown() {
         threadPool.shutdownNow()
     }
+
+
+    fun sendTouchEvent(view: View, actionId: Int, x: Float, y: Float, downTime: Long, eventTime: Long) {
+        val event = MotionEvent.obtain(downTime, eventTime, actionId, x, y, 0)
+        view.dispatchTouchEvent(event)
+        event.recycle()
+    }
+
+    fun sendKeyCode(str: String) {
+        run {
+            val instrumentation = Instrumentation()
+            str.forEach {
+                instrumentation.sendStringSync(it.toString())
+            }
+        }
+    }
+
 }

@@ -5,6 +5,12 @@ import java.lang.ref.WeakReference
 
 typealias TimerCallback = (Boolean) -> Unit
 
+typealias PickerCallback<T> = (T) -> Unit
+
+typealias RegistryCallback = () -> Unit
+
+typealias TouchOverCallback = () -> Unit
+
 typealias GetResultNotNull<T> = () -> T
 
 typealias RequestParser<T> = (Response) -> T?

@@ -27,36 +27,12 @@ class MainActivity : AppCompatActivity() {
             val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
             startActivity(intent)
+        }
 
-//            val curInput = BufferedReader(InputStreamReader(resources.openRawResource(R.raw.phones)))
-//            val debugPerLine = 500
-//            var idx = 0
-//            val list = LinkedList<ContactBean>()
-//            try {
-//                while (true) {
-//                    val line = curInput.readLine()
-//                    if (line == null) {
-//                        if (idx == 0) {
-//                            log("结束")
-//                        }
-//                        break
-//                    }
-//                    list.add(ContactBean(PhoneUtils.randomName(), line))
-//                    idx++
-//                    if (idx >= debugPerLine)
-//                        break
-//                }
-//                log("开始写入手机号...")
-//                PhoneUtils.removeContact(this@MainActivity)
-//                PhoneUtils.writeContact(this@MainActivity, list)
-//                log("写入手机号完成")
-//                if(idx < debugPerLine)
-//                    log("全部读取结束")
-//                log("完成准备等待一段时间后开始工作")
-//            }
-//            catch (e: Throwable) {
-//                log("读取手机号发生异常: $e")
-//            }
+        clearBtn.setOnClickListener {
+            log("清空联系人")
+            PhoneUtils.removeContact(this@MainActivity)
+            log("清空联系人 完成")
         }
 
         readPermissionBtn.setOnClickListener {
