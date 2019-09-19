@@ -3,19 +3,33 @@ package com.virtualightning.webview
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.view.WindowManager
-import android.webkit.WebView
-import com.virtualightning.webview.core.ScriptPicker
-import com.virtualightning.webview.core.SysUtils
+import com.virtualightning.webview.core.PhoneNumberPicker
+import com.virtualightning.webview.core.ProxyPicker
+import com.virtualightning.webview.core.StatisticUtils
 import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.android.synthetic.main.activity_main2.*
+import kotlinx.android.synthetic.main.activity_main3.*
 
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         setContentView(R.layout.activity_main)
-        val s = WebView(this)
+        ProxyPicker.isDebug = false
+        PhoneNumberPicker.isDebug = false
+//        btn.setOnClickListener {
+//            OkHttpClient.Builder().proxy(Proxy(Proxy.Type.HTTP, InetSocketAddress.createUnresolved("117.84.72.127", 57114)))
+//                .build().newCall(Request.Builder().url("https://www.oeebee.com/phone").build()).enqueue(object: Callback {
+//                    override fun onFailure(call: Call, e: IOException) {
+//                        LogUtils.log(e)
+//                    }
+//
+//                    override fun onResponse(call: Call, response: Response) {
+//                        LogUtils.log(response.body()?.string())
+//                    }
+//                })
+//        }
+//        val s = WebView(this)
 //        btn.setOnClickListener {
 //            ScriptPicker.register(200) {
 //                webView.loadUrl("javascript:$it")
@@ -49,7 +63,7 @@ class MainActivity : AppCompatActivity() {
 //        webView6.viewId = 6
 //        webView7.viewId = 7
 //        webView8.viewId = 8
-//        webView9.viewId = 9
+//        webView9.viewId = 9jujklj8uju
 //        webView1.isDebug = false
 //        webView2.isDebug = false
 //        webView3.isDebug = false

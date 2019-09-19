@@ -15,7 +15,7 @@ object ScriptPicker: BasePicker<String>() {
     override fun onAction() {
         val curScript = script
         if(curScript == null) {
-            val inputStream = CustomApplication.instance.resources.assets.open("script.js")
+            val inputStream = CustomApplication.instance.resources.assets.open("script2.js")
             val reader = BufferedReader(InputStreamReader(inputStream))
             val readScript = reader.readText()
             this.script = readScript

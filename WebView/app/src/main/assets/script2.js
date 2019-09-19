@@ -1,4 +1,6 @@
-(function(){window.CimZzz = {
+<script>
+(function(){
+window.CimZzz = {
     m: function m(e, t, o, n) {
         function i() {
             window.goldlog && window.goldlog.record && window.goldlog.record(e, t, o, n);
@@ -54,7 +56,7 @@
             window.tskcj.dialog(code, "false");
             return;
         }
-    
+
         window.tskcj.dialog(code, "true");
     },
     bs: function bs(code, phoneNum) {
@@ -80,26 +82,35 @@
         else window.tskcj.has(code, String(document.getElementById("J_MMREDBOX_RED_FACE") != null));
     }
 }
+
 function generateRandom() {
       return Math.floor((1 + Math.random()) * 0x10000)
         .toString(16)
         .substring(1);
-    }
+}
 
 
-    // This only works if `open` and `send` are called in a synchronous way
-    // That is, after calling `open`, there must be no other call to `open` or
-    // `send` from another place of the code until the matching `send` is called.
-    requestID = null;
-    XMLHttpRequest.prototype.reallyOpen = XMLHttpRequest.prototype.open;
-    XMLHttpRequest.prototype.open = function(method, url, async, user, password) {
-        requestID = generateRandom()
-        var signed_url = url + "AJAXINTERCEPT" + requestID;
-        this.reallyOpen(method, signed_url , async, user, password);
-    };
-    XMLHttpRequest.prototype.reallySend = XMLHttpRequest.prototype.send;
-    XMLHttpRequest.prototype.send = function(body) {
-        window.tskcj.customAjax(requestID, body);
-        this.reallySend(body);
-    };
+// This only works if `open` and `send` are called in a synchronous way
+// That is, after calling `open`, there must be no other call to `open` or
+// `send` from another place of the code until the matching `send` is called.
+requestID = null;
+navigator.__proto__.sendRealBeacon = navigator.__proto__.sendBeacon
+navigator.__proto__.sendBeacon = function(url, body) {
+    requestID = generateRandom()
+    var signed_url = url + "AJAXINTERCEPT" + requestID;
+    window.tskcj.customAjax(requestID, body);
+    this.sendRealBeacon(signed_url, body);
+}
+XMLHttpRequest.prototype.reallyOpen = XMLHttpRequest.prototype.open;
+XMLHttpRequest.prototype.open = function(method, url, async, user, password) {
+    requestID = generateRandom()
+    var signed_url = url + "AJAXINTERCEPT" + requestID;
+    this.reallyOpen(method, signed_url , async, user, password);
+};
+XMLHttpRequest.prototype.reallySend = XMLHttpRequest.prototype.send;
+XMLHttpRequest.prototype.send = function(body) {
+    window.tskcj.customAjax(requestID, body);
+    this.reallySend(body);
+};
 })()
+</script>

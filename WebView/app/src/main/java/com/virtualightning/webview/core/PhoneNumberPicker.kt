@@ -1,5 +1,8 @@
 package com.virtualightning.webview.core
 
+import com.alibaba.fastjson.JSON
+import okhttp3.Request
+
 /**
  *  Anchor : Create by CimZzz
  *  Time : 2019/09/08 11:53:33
@@ -7,51 +10,49 @@ package com.virtualightning.webview.core
  *  Since Version : Alpha
  */
 object PhoneNumberPicker: BasePicker<String>() {
+    var isDebug = true
+
+
     override fun onAction() {
-        completeAction(
-            listOf(
-                "18234056699",
-                "15592772060",
-                "18992787272",
-                "18379150312",
-                "13662769723",
-                "13036003168",
-                "13781735811",
-                "13938918557",
-                "13879220789",
-                "18397777453",
-                "15810886893",
-                "15769215416",
-                "15631763493",
-                "15943435501",
-                "15200999592",
-                "13982881448",
-                "17754161517",
-                "13456661587",
-                "13538941970",
-                "13835625897",
-                "15095381709",
-                "13510228211",
-                "15930971952",
-                "15986702342",
-                "18279972542",
-                "15683299975",
-                "13733970961",
-                "15202955950",
-                "13355671563",
-                "13530459977",
-                "13076327650",
-                "13538910488",
-                "18790946321",
-                "18720186540",
-                "13903547377",
-                "13910301121",
-                "13860977136",
-                "18851250167",
-                "18792509507",
-                "13456860666",
-                "18286317379"
-            )
+        requestPhoneNumber()
+    }
+
+
+    private fun requestPhoneNumber() {
+        if(isDebug)
+            LogUtils.log("phone -> [准备] 开始获取手机号...")
+        HttpUtils.request(
+            Request.Builder().url("https://www.oeebee.com/phone?count=30"),
+            parser = {
+                JSON.parseObject(it.body()?.string())
+            },
+            callback = {
+                isSuccess, obj ->
+                if(isSuccess && obj != null) {
+                    val phoneArr = obj.getJSONArray("phones")?.filterIsInstance(String::class.java)
+                    if(phoneArr != null && phoneArr.isNotEmpty()) {
+                        getPhoneSuccess(phoneArr)
+                        return@request
+                    }
+                }
+
+                error("请求失败")
+                return@request
+            }
         )
+    }
+
+    private fun getPhoneSuccess(phoneList: List<String>) {
+        if(isDebug)
+            LogUtils.log("phone -> [成功] 获取手机号成功: $phoneList")
+        completeAction(phoneList)
+    }
+
+    private fun error(cause: String) {
+        if(isDebug)
+            LogUtils.log("phone -> [失败] $cause，将在三秒后重试...")
+        SysUtils.registerTimerCallback("phone", 3000L, isOnce = true) {
+            requestPhoneNumber()
+        }
     }
 }

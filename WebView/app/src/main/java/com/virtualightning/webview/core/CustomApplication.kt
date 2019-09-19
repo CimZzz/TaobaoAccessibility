@@ -1,6 +1,7 @@
 package com.virtualightning.webview.core
 
 import android.app.Application
+import com.tencent.bugly.crashreport.CrashReport
 
 /**
  *  Anchor : Create by CimZzz
@@ -16,5 +17,6 @@ class CustomApplication: Application() {
     override fun onCreate() {
         super.onCreate()
         instance = this
+        CrashReport.initCrashReport(this, "6c8fa281f6", false)
     }
 }

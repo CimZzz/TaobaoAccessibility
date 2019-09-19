@@ -2,6 +2,7 @@ package com.virtualightning.webview.core
 
 import okhttp3.*
 import java.io.IOException
+import java.net.Proxy
 import java.util.concurrent.TimeUnit
 
 /**

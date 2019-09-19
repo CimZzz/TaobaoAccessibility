@@ -12,4 +12,7 @@ object LogUtils {
     fun log(any: Any?) {
         Log.v("CimZzz", any.toString())
     }
+    fun url(any: Any?) {
+        Log.v("CimZzz-URL", any.toString())
+    }
 }

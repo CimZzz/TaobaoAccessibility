@@ -21,6 +21,10 @@ import java.util.concurrent.Executors
  *  Since Version : Alpha
  */
 object SysUtils {
+    private val beginTime = SystemClock.elapsedRealtime()
+
+    fun getElapsedSecond(): Long = (SystemClock.elapsedRealtime() - beginTime) / 1000
+
     fun destroy() {
         shutdown()
         closeTimer()

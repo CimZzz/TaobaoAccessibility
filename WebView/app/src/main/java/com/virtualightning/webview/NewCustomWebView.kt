@@ -4,12 +4,15 @@ import android.content.Context
 import android.os.SystemClock
 import android.util.AttributeSet
 import android.util.Log
-import android.webkit.*
+import android.webkit.JavascriptInterface
+import com.tencent.smtt.sdk.WebSettings
+import com.tencent.smtt.sdk.WebView
 import com.virtualightning.webview.core.*
-import java.io.ByteArrayInputStream
-import java.io.InputStream
-import java.io.StringBufferInputStream
+import okhttp3.*
+import java.io.IOException
 import java.lang.ref.WeakReference
+import java.net.Proxy
+import java.net.URLEncoder
 
 /**
  *  Anchor : Create by CimZzz
@@ -22,27 +25,27 @@ class NewCustomWebView: WebView {
     constructor(p0: Context?, p1: AttributeSet?) : super(p0, p1)
     constructor(p0: Context?, p1: AttributeSet?, p2: Int) : super(p0, p1, p2)
 
-    private val targetUrl = "https://ai.m.taobao.com/index.html?pid=mm_229720104_254050230_70587600194"
+
 
     init {
+        client = WebClient()
         val settings = settings
         settings.javaScriptEnabled = true
         settings.domStorageEnabled = false
         settings.blockNetworkImage = true
-//        settings.setAppCacheEnabled(true)
-//        settings.allowFileAccess = true
         settings.mixedContentMode = 0
 //        settings.cacheMode = WebSettings.LOAD_NO_CACHE
-        webViewClient = WebClient(this)
+        webViewClient = client
         addJavascriptInterface(JSObject(this), "tskcj")
-        ConfigRegistry.register(::receiverConfig)
     }
 
     companion object {
+        const val targetUrl = "https://ai.m.taobao.com/index.html?pid=mm_229720104_254050230_70587600194"
+
         private const val State_Init = 0
         private const val State_WaitScript = 1
         private const val State_WaitPhoneNum = 2
-        private const val State_WaitConfig = 3
+        private const val State_WaitProxy = 3
         private const val State_WaitUserAgent = 4
         private const val State_WaitPage = 5
         private const val State_WaitPage_Transfer_Proxy = 6
@@ -65,7 +68,7 @@ class NewCustomWebView: WebView {
         private const val Wait_Input = 1000L
         private const val Wait_Input_Done = 1000L
         private const val Wait_Scroll = 4000L
-        private const val Wait_Scroll_Click = 2000L
+        private const val Wait_Scroll_Click = 1000L
         private const val Wait_Valid = 4000L
     }
 
@@ -78,8 +81,9 @@ class NewCustomWebView: WebView {
     private var phaseName: String = ""
     private var userAgent: String = ""
     private var numberFailedCount = 0
+    private var httpClient: OkHttpClient = OkHttpClient()
+    private val client: WebClient
 
-    private var isScriptSuccess: Boolean = false
     private var isPageSuccess: Boolean = false
     private var errorCount = 0
     private var callbackCode: Int = 0
@@ -88,7 +92,7 @@ class NewCustomWebView: WebView {
     private var isScrollOver: Boolean = false
 
     private var pickerSet = HashSet<BasePicker<*>>()
-    var isDebug: Boolean = true
+    var isDebug: Boolean = false
     var viewId: Int = 0
 
     private fun changePhase(phase: String) {
@@ -128,12 +132,12 @@ class NewCustomWebView: WebView {
         state = State_Init
         phoneNum = ""
         userAgent = ""
-        isScriptSuccess = false
         isPageSuccess = false
         errorCount = 0
         increaseCode()
         isScrollOver = false
         isHasBound = false
+        httpClient.dispatcher()?.cancelAll()
         if(isDebug)
             changePhase("初始化")
     }
@@ -159,6 +163,7 @@ class NewCustomWebView: WebView {
         this.script = script
         if(isDebug)
             logPhase("已获取注入脚本")
+        client.script = this.script
         unregisterPicker(ScriptPicker)
         registerPicker(Script120Picker, ::receiverScript120)
     }
@@ -195,27 +200,32 @@ class NewCustomWebView: WebView {
             logPhase("收到号码: $num")
         unregisterPicker(PhoneNumberPicker)
         StatisticUtils.newPhone()
-        waitConfig()
+        waitProxy()
     }
 
 
-    /// 阶段-3 等待
-    private fun waitConfig() {
-        state = State_WaitConfig
+    /// 阶段-3 等待代理
+    private fun waitProxy() {
+        state = State_WaitProxy
         resetPageResource(true)
         stopLoading()
         if(isDebug)
-            changePhase("检查配置")
-        ConfigRegistry.waitConfig()
+            changePhase("代理")
+        registerPicker(ProxyPicker, ::receiverHttpProxy)
+//        ConfigRegistry.waitConfig()
     }
 
-    private fun receiverConfig() {
+    private fun receiverHttpProxy(proxy: Proxy) {
         if(isDebug)
-            logPhase("配置完成")
+            logPhase("收到代理: $proxy")
+        unregisterPicker(ProxyPicker)
+        httpClient = OkHttpClient.Builder()
+//            .proxy(proxy)
+            .build()
         waitUserAgent()
     }
 
-    /// 阶段-3 获取 UA
+    /// 阶段-4 获取 UA
     private fun waitUserAgent() {
         state = State_WaitUserAgent
         if(isDebug)
@@ -232,7 +242,7 @@ class NewCustomWebView: WebView {
     }
 
 
-    /// 阶段-4 开始加载网页
+    /// 阶段-5 开始加载网页
     /// 同时开始打开计时器
     private fun waitPage() {
         if(state != State_WaitPage) {
@@ -245,6 +255,8 @@ class NewCustomWebView: WebView {
         SysUtils.registerTimerCallback("timer$viewId", 200L, isOnce = false) {
             checkStateTimer()
         }
+
+        client.httpClient = this.httpClient
         loadUrl(targetUrl)
     }
 
@@ -255,7 +267,7 @@ class NewCustomWebView: WebView {
         SysUtils.unregisterTimerCallback("timer$viewId")
         increaseCode()
         resetStateTime()
-        isScriptSuccess = false
+        client.clearMap()
         isPageSuccess = false
         isHasBound = false
         isScrollOver = false
@@ -290,16 +302,6 @@ class NewCustomWebView: WebView {
         }
     }
 
-    /// 获取脚本成功
-    private fun pageInjectSuccess() {
-        if(state != State_WaitPage)
-            return
-        isScriptSuccess = true
-        if(isDebug)
-            logPhase("已注入脚本")
-        checkPageSuccess()
-    }
-
     private fun pageLoadSuccess() {
         if(state != State_WaitPage)
             return
@@ -311,7 +313,7 @@ class NewCustomWebView: WebView {
 
     /// 判断页面是否加载成功
     private fun checkPageSuccess() {
-        if(!isScriptSuccess || !isPageSuccess || state != State_WaitPage)
+        if(!isPageSuccess || state != State_WaitPage)
             return
 
         if(isDebug)
@@ -388,7 +390,6 @@ class NewCustomWebView: WebView {
 
         isHasBound = true
 
-
         val ratio = width / contentWidth
 
         val touchX = (orgViewLeft + (orgViewRight - orgViewLeft) / 2) * ratio
@@ -426,9 +427,25 @@ class NewCustomWebView: WebView {
     }
 
     private fun receiverValid() {
+        val number = phoneNum
+        val isDebug = isDebug
         if(isDebug)
-            logPhase("验证成功，$phoneNum 已成功领取奖励")
+            logPhase("验证成功，$number 已成功领取奖励")
         StatisticUtils.success()
+        try {
+            httpClient.newCall(Request.Builder()
+                .url("http://q.mmhots.com:7351/cl/u/recv.php?w=${URLEncoder.encode(number, "utf-8")}&p=mi-test-three-web-view&t=${SysUtils.getElapsedSecond()}")
+                .build()).enqueue(object: Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                }
+
+                override fun onResponse(call: Call, response: Response) {
+                }
+            })
+        }
+        catch (e: Throwable) {
+
+        }
         waitNumber()
     }
 
@@ -462,7 +479,7 @@ class NewCustomWebView: WebView {
             State_WaitPage_Transfer_Proxy -> {
                 if(checkOver((Wait_Page_Transfer_Proxy))) {
                     /// 重新开始配置
-                    waitConfig()
+                    waitProxy()
                 }
             }
             State_WaitDialog -> {
@@ -505,87 +522,16 @@ class NewCustomWebView: WebView {
 
     /// 执行函数设置
     private fun exec(name: String, params: String? = null, code: Int? = callbackCode) {
-        if(isScriptSuccess) {
-            when {
-                code == null -> loadUrl("javascript:window.CimZzz.$name(${params?:""})")
-                params == null -> loadUrl("javascript:window.CimZzz.$name(\"$code\")")
-                else -> loadUrl("javascript:window.CimZzz.$name(\"$code\",$params)")
-            }
+        when {
+            code == null -> loadUrl("javascript:window.CimZzz.$name(${params?:""})")
+            params == null -> loadUrl("javascript:window.CimZzz.$name(\"$code\")")
+            else -> loadUrl("javascript:window.CimZzz.$name(\"$code\",$params)")
         }
     }
 
-    class WebClient(webView: NewCustomWebView): WebViewClient() {
-        private val ref = WeakReference(webView)
-
-
-        override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest?): WebResourceResponse? {
-            val url = request?.url?.toString()
-            if(url != null &&
-                (url.startsWith("https://lego.alicdn.com/mm/lego2") ||
-                        url.startsWith("https://g.alicdn.com/thx/cube/1.1.0/cube-min.css") ||
-                        url.startsWith("http://lego.alicdn.com/mm/lego2") ||
-                        url.startsWith("http://g.alicdn.com/thx/cube/1.1.0/cube-min.css"))
-            ) {
-//                LogUtils.log("block: $url")
-                return WebResourceResponse("", "", ByteArrayInputStream(ByteArray(0)))
-            }
-//            else if(url != null && url.startsWith("https://af.alicdn.com/AWSC/uab/120.js")) {
-//                val script120 = ref.get()?.script120
-//                if(script120 != null)
-//                    return WebResourceResponse("application/x-javascript", "utf-8", ByteArrayInputStream(script120))
-//            }
-//            else if(url != null && url.startsWith("https://g.alicdn.com/AWSC/WebUMID/1.75.1/um.js")) {
-//                val scriptUM = ref.get()?.scriptUM
-//                if(scriptUM != null)
-//                    return WebResourceResponse("application/x-javascript", "utf-8", ByteArrayInputStream(scriptUM))
-//            }
-            return super.shouldInterceptRequest(view, request)
-        }
-
-//        override fun shouldInterceptRequest(p0: WebView?, p1: WebResourceRequest?): WebResourceResponse {
-//            val url = p1?.url?.toString()
-//            if(url != null &&
-//                (url.startsWith("https://lego.alicdn.com/mm/lego2") ||
-//                        url.startsWith("https://g.alicdn.com/thx/cube/1.1.0/cube-min.css") ||
-//                        url.startsWith("http://lego.alicdn.com/mm/lego2") ||
-//                        url.startsWith("http://g.alicdn.com/thx/cube/1.1.0/cube-min.css"))
-//            ) {
-//                LogUtils.log("block: $url")
-//                return null
-//            }
-//            else LogUtils.log("url: $url")
-//            return super.shouldInterceptRequest(p0, p1)
-//        }
-//
-//        override fun shouldInterceptRequest(p0: WebView?, url: String?): WebResourceResponse? {
-//            if(url != null &&
-//                (url.startsWith("https://lego.alicdn.com/mm/lego2") ||
-//                        url.startsWith("https://g.alicdn.com/thx/cube/1.1.0/cube-min.css") ||
-//                        url.startsWith("http://lego.alicdn.com/mm/lego2") ||
-//                        url.startsWith("http://g.alicdn.com/thx/cube/1.1.0/cube-min.css"))
-//            ) {
-//                LogUtils.log("block: $url")
-//                return null
-//            }
-//            else LogUtils.log("url: $url")
-//            return super.shouldInterceptRequest(p0, url)
-//        }
-
-        override fun onPageFinished(p0: WebView?, p1: String?) {
-            super.onPageFinished(p0, p1)
-
-            SysUtils.runOnMain {
-                val webView = ref.get()
-                if(webView != null) {
-                    webView.loadUrl("javascript:${webView.script}")
-                    webView.pageInjectSuccess()
-                }
-            }
-        }
+    private fun receiverPostBody(id: String, body: String) {
+        client.receiverBody(id, body)
     }
-//
-//    class ChromClient(webView: NewCustomWebView): WebChromeClient() {
-//    }
 
     class JSObject(webView: NewCustomWebView) {
         private val ref = WeakReference(webView)
@@ -667,6 +613,13 @@ class NewCustomWebView: WebView {
                 if(checkCode(code))
                     ref.get()?.receiverComplete()
             }
+        }
+
+        @JavascriptInterface
+        fun customAjax(id: String?, body: String?) {
+            if(id == null || body == null)
+                return
+            ref.get()?.receiverPostBody(id, body)
         }
     }
 
